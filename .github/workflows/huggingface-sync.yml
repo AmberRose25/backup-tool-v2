@@ -2,8 +2,6 @@ name: Sync to Hugging Face hub
 on:
   push:
     branches: [main]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 jobs:
@@ -14,8 +12,25 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
+      
       - name: Push to hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          # REPLACE 'YOUR_HF_USERNAME' AND 'YOUR_SPACE_NAME' BELOW:
-        run: git push --force https://USERNAME:$HF_TOKEN@huggingface.co/spaces/JoeUchiha/text-processing-api-01 main
+        run: |
+          # 1. Configure Git User (Required for the LFS fix)
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          
+          # 2. Setup LFS tracking for the rejected files
+          git lfs install
+          git lfs track "packages/frontend/public/assets/background.png"
+          git lfs track "packages/frontend/src/app/icon.ico"
+          git add .gitattributes
+          
+          # 3. Renormalize (Convert existing files to LFS pointers)
+          git add --renormalize .
+          git commit -m "Convert binaries to LFS" || echo "Nothing to commit"
+          
+          # 4. Push with Force
+          # REPLACE THE PART BELOW WITH YOUR DETAILS:
+          git push --force https://JoeUchiha:$HF_TOKEN@huggingface.co/spaces/JoeUchiha/text-processing-api-01 main
